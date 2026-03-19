@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alrouf RAG Knowledge Base</title>
+    <style>
+        :root {
+            --primary: #1a2744;
+            --primary-light: #2a3f6e;
+            --accent: #c8a84e;
+            --accent-light: #e6cc7a;
+            --bg: #f5f6fa;
+            --card-bg: #ffffff;
+            --text: #2c3e50;
+            --text-light: #6b7c93;
+            --border: #e1e5eb;
+            --success: #27ae60;
+            --warning: #e67e22;
+            --error: #e74c3c;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+        }
+
+        .header-content {
+            max-width: 900px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .logo .subtitle {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+
+        .mode-badge {
+            background: var(--accent);
+            color: var(--primary);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+
+        .query-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            margin-bottom: 1.5rem;
+        }
+
+        .query-card h2 {
+            font-size: 1rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .input-row input[type="text"] {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+
+        .input-row input[type="text"]:focus {
+            border-color: var(--accent);
+        }
+
+        .input-row select {
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            background: white;
+            cursor: pointer;
+            outline: none;
+            min-width: 120px;
+        }
+
+        .input-row select:focus {
+            border-color: var(--accent);
+        }
+
+        .btn-submit {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-submit:hover { background: var(--primary-light); }
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .example-queries {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .example-btn {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-light);
+        }
+
+        .example-btn:hover {
+            background: var(--accent-light);
+            border-color: var(--accent);
+            color: var(--primary);
+        }
+
+        .response-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            display: none;
+        }
+
+        .response-card.visible { display: block; }
+
+        .response-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .response-header h2 {
+            font-size: 1rem;
+            color: var(--primary);
+        }
+
+        .latency-badge {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            background: var(--bg);
+            padding: 3px 10px;
+            border-radius: 10px;
+        }
+
+        .scope-indicator {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .scope-in { background: #e8f5e9; color: var(--success); }
+        .scope-out { background: #fde8e8; color: var(--error); }
+
+        .answer-text {
+            line-height: 1.7;
+            white-space: pre-wrap;
+            font-size: 0.95rem;
+        }
+
+        .answer-text[dir="rtl"] {
+            text-align: right;
+            font-family: 'Segoe UI', 'Arial', 'Tahoma', sans-serif;
+        }
+
+        .citations-section {
+            margin-top: 1.25rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .citations-section h3 {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .citation-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.6rem 0.75rem;
+            background: var(--bg);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .citation-number {
+            background: var(--primary);
+            color: white;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .citation-details {
+            flex: 1;
+        }
+
+        .citation-title {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .citation-meta {
+            color: var(--text-light);
+            font-size: 0.8rem;
+        }
+
+        .citation-score {
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .loading.visible { display: block; }
+
+        .spinner {
+            width: 36px;
+            height: 36px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 0.75rem;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-text {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: var(--text-light);
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 640px) {
+            .input-row { flex-direction: column; }
+            .input-row select { min-width: unset; }
+            .header-content { flex-direction: column; gap: 0.5rem; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo">
+                <h1>Alrouf Lighting Technology</h1>
+                <div class="subtitle">RAG Knowledge Base — Q&amp;A System</div>
+            </div>
+            <span class="mode-badge" id="modeBadge">Loading...</span>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="query-card">
+            <h2>Ask a Question / اطرح سؤالاً</h2>
+            <div class="input-row">
+                <input type="text" id="queryInput" placeholder="e.g., What is the IP rating of the ALR-SL-90W?"
+                       autofocus />
+                <select id="langSelect">
+                    <option value="en">English</option>
+                    <option value="ar">العربية</option>
+                </select>
+                <button class="btn-submit" id="submitBtn" onclick="submitQuery()">Ask</button>
+            </div>
+            <div class="example-queries">
+                <button class="example-btn" onclick="setQuery('What is the IP rating of the ALR-SL-90W?', 'en')">IP rating of ALR-SL-90W</button>
+                <button class="example-btn" onclick="setQuery('How do I install a streetlight?', 'en')">Installation guide</button>
+                <button class="example-btn" onclick="setQuery('What is the warranty period for LED components?', 'en')">Warranty period</button>
+                <button class="example-btn" onclick="setQuery('ما هي شهادات الجودة لشركة الروف؟', 'ar')">شهادات الجودة</button>
+                <button class="example-btn" onclick="setQuery('What projects has Alrouf completed?', 'en')">Project references</button>
+                <button class="example-btn" onclick="setQuery('What is the weather in Riyadh?', 'en')">Out-of-scope test</button>
+            </div>
+        </div>
+
+        <div class="loading" id="loadingIndicator">
+            <div class="spinner"></div>
+            <div class="loading-text">Searching knowledge base...</div>
+        </div>
+
+        <div class="response-card" id="responseCard">
+            <div class="response-header">
+                <div>
+                    <h2>Answer</h2>
+                    <span class="scope-indicator" id="scopeIndicator"></span>
+                </div>
+                <span class="latency-badge" id="latencyBadge"></span>
+            </div>
+            <div class="answer-text" id="answerText"></div>
+            <div class="citations-section" id="citationsSection">
+                <h3>Sources</h3>
+                <div id="citationsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        Alrouf Lighting Technology &mdash; RAG Knowledge Base v1.0 &mdash; Technical Assessment
+    </footer>
+
+    <script>
+        // Check health on load
+        fetch('/api/health')
+            .then(r => r.json())
+            .then(data => {
+                const badge = document.getElementById('modeBadge');
+                badge.textContent = data.mode.toUpperCase() + ' MODE';
+                badge.title = `${data.total_chunks} chunks indexed from ${data.documents_indexed} documents`;
+            })
+            .catch(() => {
+                document.getElementById('modeBadge').textContent = 'OFFLINE';
+            });
+
+        function setQuery(text, lang) {
+            document.getElementById('queryInput').value = text;
+            document.getElementById('langSelect').value = lang;
+            submitQuery();
+        }
+
+        function submitQuery() {
+            const query = document.getElementById('queryInput').value.trim();
+            if (!query) return;
+
+            const language = document.getElementById('langSelect').value;
+            const btn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loadingIndicator');
+            const responseCard = document.getElementById('responseCard');
+
+            btn.disabled = true;
+            loading.classList.add('visible');
+            responseCard.classList.remove('visible');
+
+            fetch('/api/query', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query, language })
+            })
+            .then(r => {
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return r.json();
+            })
+            .then(data => {
+                displayResponse(data);
+            })
+            .catch(err => {
+                alert('Error: ' + err.message);
+            })
+            .finally(() => {
+                btn.disabled = false;
+                loading.classList.remove('visible');
+            });
+        }
+
+        function displayResponse(data) {
+            const card = document.getElementById('responseCard');
+            const answerEl = document.getElementById('answerText');
+            const scopeEl = document.getElementById('scopeIndicator');
+            const latencyEl = document.getElementById('latencyBadge');
+            const citationsEl = document.getElementById('citationsList');
+            const citationsSection = document.getElementById('citationsSection');
+
+            // Set answer with RTL support
+            answerEl.textContent = data.answer;
+            if (data.language === 'ar') {
+                answerEl.setAttribute('dir', 'rtl');
+            } else {
+                answerEl.removeAttribute('dir');
+            }
+
+            // Scope indicator
+            if (data.is_in_scope) {
+                scopeEl.textContent = 'In Scope';
+                scopeEl.className = 'scope-indicator scope-in';
+            } else {
+                scopeEl.textContent = 'Out of Scope';
+                scopeEl.className = 'scope-indicator scope-out';
+            }
+
+            // Latency
+            latencyEl.textContent = `${data.latency_ms.toFixed(1)} ms`;
+
+            // Citations
+            citationsEl.innerHTML = '';
+            if (data.citations && data.citations.length > 0) {
+                citationsSection.style.display = 'block';
+                data.citations.forEach((c, i) => {
+                    const item = document.createElement('div');
+                    item.className = 'citation-item';
+                    item.innerHTML = `
+                        <span class="citation-number">${i + 1}</span>
+                        <div class="citation-details">
+                            <span class="citation-title">${escapeHtml(c.document_title)}</span>
+                            <span class="citation-meta"> — Chunk ${c.chunk_index + 1}, ${escapeHtml(c.source_file)}</span>
+                        </div>
+                        <span class="citation-score">${(c.relevance_score * 100).toFixed(1)}%</span>
+                    `;
+                    citationsEl.appendChild(item);
+                });
+            } else {
+                citationsSection.style.display = 'none';
+            }
+
+            card.classList.add('visible');
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // Submit on Enter key
+        document.getElementById('queryInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') submitQuery();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# Distribution / packaging
+*.egg-info/
+*.egg
+dist/
+build/
+*.whl
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+
+# Environment variables (contains secrets)
+.env
+
+# Vector store indexes (generated at build time)
+vectorstore/mock/
+vectorstore/live/
+
+# Mock model files (generated at build time)
+mocks/tfidf_model.pkl
+mocks/embeddings.pkl
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# pytest / coverage
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# mypy
+.mypy_cache/
+
+# Byte-compiled
+*.pyc
